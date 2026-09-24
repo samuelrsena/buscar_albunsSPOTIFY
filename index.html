@@ -22,6 +22,28 @@
     <section id="artists" class="grid"></section>
 
     <h2 id="albums-title" hidden></h2>
+
+    <div id="filters" class="filters" hidden>
+      <label>
+        Tipo
+        <select id="filter-type">
+          <option value="all">Todos</option>
+          <option value="album">Álbuns</option>
+          <option value="single">Singles</option>
+        </select>
+      </label>
+
+      <label>
+        Ordenar por
+        <select id="filter-sort">
+          <option value="year-desc">Ano: mais recente</option>
+          <option value="year-asc">Ano: mais antigo</option>
+          <option value="name-asc">Nome: A–Z</option>
+          <option value="name-desc">Nome: Z–A</option>
+        </select>
+      </label>
+    </div>
+
     <section id="albums" class="grid"></section>
   </main>
 

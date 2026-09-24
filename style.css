@@ -204,3 +204,45 @@ input:focus-visible,
     width: 100%;
   }
 }
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+select {
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+select:hover {
+  background: var(--surface-hover);
+}
+
+select:focus {
+  border-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .filters label,
+  select {
+    width: 100%;
+  }
+}

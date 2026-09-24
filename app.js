@@ -5,7 +5,7 @@ const CONFIG = {
   authUrl: "https://accounts.spotify.com/authorize",
   tokenUrl: "https://accounts.spotify.com/api/token",
   searchLimit: 10,
-  albumsLimit: 50,
+  albumsLimit: 10,
 };
 
 const STORAGE = {
@@ -20,6 +20,9 @@ const ELEMENT_IDS = {
   status: "status",
   artists: "artists",
   albumsTitle: "albums-title",
+  filters: "filters",
+  typeFilter: "filter-type",
+  sortFilter: "filter-sort",
   albums: "albums",
 };
 
@@ -39,8 +42,15 @@ if (missingIds.length) {
   throw new Error(`IDs ausentes no HTML: ${missingIds.join(", ")}`);
 }
 
+const DEFAULT_FILTERS = {
+  type: "all",
+  sort: "year-desc",
+};
+
 const state = {
   token: null,
+  albums: [],
+  artistName: "",
 };
 
 const Auth = {
@@ -157,7 +167,7 @@ const Api = {
       path = data.next;
     }
 
-    return sortByReleaseDate(removeDuplicates(albums));
+    return removeDuplicates(albums);
   },
 };
 
@@ -165,17 +175,29 @@ function removeDuplicates(albums) {
   const seen = new Set();
 
   return albums.filter((album) => {
-    const key = album.name.toLowerCase();
+    const key = `${album.name.toLowerCase()}|${album.album_type}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
 
-function sortByReleaseDate(albums) {
-  return [...albums].sort((a, b) =>
-    b.release_date.localeCompare(a.release_date)
-  );
+const compareNames = (a, b) =>
+  a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+
+const SORTERS = {
+  "year-desc": (a, b) =>
+    b.release_date.localeCompare(a.release_date) || compareNames(a, b),
+  "year-asc": (a, b) =>
+    a.release_date.localeCompare(b.release_date) || compareNames(a, b),
+  "name-asc": (a, b) => compareNames(a, b),
+  "name-desc": (a, b) => compareNames(b, a),
+};
+
+function filterAlbums(albums, { type, sort }) {
+  return albums
+    .filter((album) => type === "all" || album.album_type === type)
+    .sort(SORTERS[sort]);
 }
 
 const UI = {
@@ -208,6 +230,19 @@ const UI = {
     el.artists.innerHTML = "";
     el.albums.innerHTML = "";
     el.albumsTitle.hidden = true;
+    el.filters.hidden = true;
+  },
+
+  resetFilters() {
+    el.typeFilter.value = DEFAULT_FILTERS.type;
+    el.sortFilter.value = DEFAULT_FILTERS.sort;
+  },
+
+  getFilters() {
+    return {
+      type: el.typeFilter.value,
+      sort: el.sortFilter.value,
+    };
   },
 
   artistCard(artist) {
@@ -227,12 +262,13 @@ const UI = {
       ? `<img src="${album.images[0].url}" alt="">`
       : "";
     const year = album.release_date.slice(0, 4);
+    const type = album.album_type === "single" ? "single" : "álbum";
 
     return `
       <a class="card" href="${album.external_urls.spotify}" target="_blank" rel="noopener">
         ${image}
         <strong>${this.escape(album.name)}</strong>
-        <small>${year} · ${album.album_type} · ${album.total_tracks} faixas</small>
+        <small>${year} · ${type} · ${album.total_tracks} faixas</small>
       </a>`;
   },
 
@@ -248,15 +284,27 @@ const UI = {
     el.artists.innerHTML = artists.map((a) => this.artistCard(a)).join("");
   },
 
-  renderAlbums(albums, artistName) {
+  renderAlbums(albums, artistName, total) {
     this.clearResults();
-    this.setStatus();
 
     el.albumsTitle.hidden = false;
-    el.albumsTitle.textContent = `${albums.length} álbuns e singles de ${artistName}`;
+    el.filters.hidden = false;
+    el.albumsTitle.textContent = `${albums.length} de ${total} lançamentos de ${artistName}`;
+
+    if (!albums.length) {
+      this.setStatus("Nenhum lançamento com esse filtro.");
+      return;
+    }
+
+    this.setStatus();
     el.albums.innerHTML = albums.map((a) => this.albumCard(a)).join("");
   },
 };
+
+function applyFilters() {
+  const filtered = filterAlbums([...state.albums], UI.getFilters());
+  UI.renderAlbums(filtered, state.artistName, state.albums.length);
+}
 
 async function run(task) {
   try {
@@ -287,8 +335,10 @@ function handleArtistClick(event) {
 
   run(async () => {
     UI.setStatus("Carregando álbuns...");
-    const albums = await Api.getAllAlbums(id);
-    UI.renderAlbums(albums, name);
+    state.albums = await Api.getAllAlbums(id);
+    state.artistName = name;
+    UI.resetFilters();
+    applyFilters();
   });
 }
 
@@ -296,6 +346,7 @@ function bindEvents() {
   el.loginBtn.addEventListener("click", () => Auth.login());
   el.form.addEventListener("submit", handleSearch);
   el.artists.addEventListener("click", handleArtistClick);
+  el.filters.addEventListener("change", applyFilters);
 }
 
 async function init() {
