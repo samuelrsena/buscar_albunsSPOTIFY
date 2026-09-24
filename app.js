@@ -1,5 +1,5 @@
 const CONFIG = {
-  clientId: "COLE_SEU_CLIENT_ID_AQUI",
+  clientId: "584f712206474980b6a131b58d87356b",
   redirectUri: "http://127.0.0.1:5500/",
   apiUrl: "https://api.spotify.com/v1",
   authUrl: "https://accounts.spotify.com/authorize",
