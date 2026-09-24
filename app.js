@@ -11,6 +11,7 @@ const CONFIG = {
 const STORAGE = {
   token: "token",
   verifier: "verifier",
+  view: "view",
 };
 
 const ELEMENT_IDS = {
@@ -23,6 +24,7 @@ const ELEMENT_IDS = {
   filters: "filters",
   typeFilter: "filter-type",
   sortFilter: "filter-sort",
+  viewToggle: "view-toggle",
   albums: "albums",
 };
 
@@ -51,6 +53,7 @@ const state = {
   token: null,
   albums: [],
   artistName: "",
+  view: "grid",
 };
 
 const Auth = {
@@ -128,8 +131,17 @@ const Auth = {
   },
 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const Api = {
-  async request(path) {
+  async request(path, retries = 2) {
     const url = path.startsWith("http") ? path : CONFIG.apiUrl + path;
 
     const response = await fetch(url, {
@@ -139,14 +151,51 @@ const Api = {
     if (response.status === 401) {
       Auth.clear();
       UI.showLogin();
-      throw new Error("Sessão expirada. Entre novamente.");
+      throw new ApiError("Sessão expirada. Entre novamente.", 401);
+    }
+
+    if (response.status === 429) {
+      const body = await response.json().catch(() => ({}));
+      const quotaExceeded = body?.error?.reason === "QUOTA_EXCEEDED";
+      const wait = Number(response.headers.get("Retry-After")) || 2;
+
+      if (quotaExceeded) {
+        throw new ApiError(
+          "Cota de uso da API do Spotify esgotada. Aguarde um tempo e tente novamente.",
+          429
+        );
+      }
+
+      if (retries > 0 && wait <= 10) {
+        await sleep(wait * 1000);
+        return this.request(path, retries - 1);
+      }
+
+      throw new ApiError(
+        "Muitas requisições ao Spotify. Aguarde alguns instantes e tente novamente.",
+        429
+      );
     }
 
     if (!response.ok) {
-      throw new Error(`Erro ${response.status} na API do Spotify.`);
+      throw new ApiError(`Erro ${response.status} na API do Spotify.`, response.status);
     }
 
     return response.json();
+  },
+
+  readCache(artistId) {
+    try {
+      return JSON.parse(sessionStorage.getItem(`albums:${artistId}`));
+    } catch {
+      return null;
+    }
+  },
+
+  saveCache(artistId, albums) {
+    try {
+      sessionStorage.setItem(`albums:${artistId}`, JSON.stringify(albums));
+    } catch {}
   },
 
   async searchArtists(name) {
@@ -158,16 +207,33 @@ const Api = {
   },
 
   async getAllAlbums(artistId) {
+    const cached = this.readCache(artistId);
+    if (cached) return { albums: cached, partial: false };
+
     let path = `/artists/${artistId}/albums?include_groups=album,single&limit=${CONFIG.albumsLimit}`;
     const albums = [];
+    let partial = false;
 
     while (path) {
-      const data = await this.request(path);
-      albums.push(...data.items);
-      path = data.next;
+      try {
+        const data = await this.request(path);
+        albums.push(...data.items);
+        path = data.next;
+      } catch (error) {
+        if (error.status === 429 && albums.length) {
+          partial = true;
+          break;
+        }
+        throw error;
+      }
+
+      if (path) await sleep(300);
     }
 
-    return removeDuplicates(albums);
+    const result = removeDuplicates(albums);
+    if (!partial) this.saveCache(artistId, result);
+
+    return { albums: result, partial };
   },
 };
 
@@ -245,6 +311,21 @@ const UI = {
     };
   },
 
+  setView(view) {
+    state.view = view;
+    el.albums.classList.toggle("list", view === "list");
+
+    el.viewToggle.querySelectorAll(".view-btn").forEach((btn) => {
+      const active = btn.dataset.view === view;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", String(active));
+    });
+
+    try {
+      localStorage.setItem(STORAGE.view, view);
+    } catch {}
+  },
+
   artistCard(artist) {
     const image = artist.images[0]
       ? `<img src="${artist.images[0].url}" alt="">`
@@ -260,7 +341,7 @@ const UI = {
   albumCard(album) {
     const image = album.images[0]
       ? `<img src="${album.images[0].url}" alt="">`
-      : "";
+      : `<div class="cover"></div>`;
     const year = album.release_date.slice(0, 4);
     const type = album.album_type === "single" ? "single" : "álbum";
 
@@ -335,11 +416,25 @@ function handleArtistClick(event) {
 
   run(async () => {
     UI.setStatus("Carregando álbuns...");
-    state.albums = await Api.getAllAlbums(id);
+
+    const { albums, partial } = await Api.getAllAlbums(id);
+    state.albums = albums;
     state.artistName = name;
+
     UI.resetFilters();
     applyFilters();
+
+    if (partial) {
+      UI.setStatus(
+        "Limite de requisições atingido: mostrando só parte dos lançamentos. Aguarde um pouco e clique no artista de novo."
+      );
+    }
   });
+}
+
+function handleViewToggle(event) {
+  const btn = event.target.closest(".view-btn");
+  if (btn) UI.setView(btn.dataset.view);
 }
 
 function bindEvents() {
@@ -347,10 +442,17 @@ function bindEvents() {
   el.form.addEventListener("submit", handleSearch);
   el.artists.addEventListener("click", handleArtistClick);
   el.filters.addEventListener("change", applyFilters);
+  el.viewToggle.addEventListener("click", handleViewToggle);
 }
 
 async function init() {
   bindEvents();
+
+  let savedView = "grid";
+  try {
+    savedView = localStorage.getItem(STORAGE.view) || "grid";
+  } catch {}
+  UI.setView(savedView === "list" ? "list" : "grid");
 
   try {
     await Auth.handleCallback();
@@ -364,10 +466,6 @@ async function init() {
     UI.showSearch();
   } else {
     UI.showLogin();
-  }
-
-  if (CONFIG.clientId.startsWith("COLE_SEU")) {
-    UI.setStatus("Troque COLE_SEU_CLIENT_ID_AQUI pelo seu Client ID no app.js.");
   }
 }
 
