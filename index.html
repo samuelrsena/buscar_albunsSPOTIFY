@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Álbuns</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <main>
+        <h1>Busque seu Álbum</h1>
+
+        <button id="login-bnt" hidden>Entrar com Spotify</button>
+
+        <form id="search-form" hidden>
+            <input id="artist-input" placeholder="Nome do Artista..." required>
+            <button type="submit">Buscar</button>
+        </form>
+
+        <p id="status"></p>
+
+        <section id="artistas" class="grid"></section>
+
+        <h2 id="albums-title" hidden></h2>
+
+        <section id="albums" class="grid"></section>
+
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
