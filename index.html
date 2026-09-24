@@ -1,32 +1,30 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Álbuns</title>
-    <link rel="stylesheet" href="style.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buscador de Álbuns</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main>
-        <h1>Busque seu Álbum</h1>
+  <main>
+    <h1>Busque seu Álbum</h1>
 
-        <button id="login-bnt" hidden>Entrar com Spotify</button>
+    <button id="login-btn" hidden>Entrar com Spotify</button>
 
-        <form id="search-form" hidden>
-            <input id="artist-input" placeholder="Nome do Artista..." required>
-            <button type="submit">Buscar</button>
-        </form>
+    <form id="search-form" hidden>
+      <input id="artist-input" placeholder="Nome do artista..." required>
+      <button type="submit">Buscar</button>
+    </form>
 
-        <p id="status"></p>
+    <p id="status"></p>
 
-        <section id="artistas" class="grid"></section>
+    <section id="artists" class="grid"></section>
 
-        <h2 id="albums-title" hidden></h2>
+    <h2 id="albums-title" hidden></h2>
+    <section id="albums" class="grid"></section>
+  </main>
 
-        <section id="albums" class="grid"></section>
-
-    </main>
-    <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

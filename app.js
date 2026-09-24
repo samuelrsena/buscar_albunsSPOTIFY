@@ -13,15 +13,31 @@ const STORAGE = {
   verifier: "verifier",
 };
 
-const el = {
-  loginBtn: document.getElementById("login-btn"),
-  form: document.getElementById("search-form"),
-  input: document.getElementById("artist-input"),
-  status: document.getElementById("status"),
-  artists: document.getElementById("artists"),
-  albumsTitle: document.getElementById("albums-title"),
-  albums: document.getElementById("albums"),
+const ELEMENT_IDS = {
+  loginBtn: "login-btn",
+  form: "search-form",
+  input: "artist-input",
+  status: "status",
+  artists: "artists",
+  albumsTitle: "albums-title",
+  albums: "albums",
 };
+
+const el = {};
+const missingIds = [];
+
+for (const [key, id] of Object.entries(ELEMENT_IDS)) {
+  el[key] = document.getElementById(id);
+  if (!el[key]) missingIds.push(id);
+}
+
+if (missingIds.length) {
+  document.body.insertAdjacentHTML(
+    "afterbegin",
+    `<p style="color:#ff6b6b;padding:16px">IDs ausentes no HTML: ${missingIds.join(", ")}</p>`
+  );
+  throw new Error(`IDs ausentes no HTML: ${missingIds.join(", ")}`);
+}
 
 const state = {
   token: null,
@@ -298,6 +314,12 @@ async function init() {
   } else {
     UI.showLogin();
   }
+
+  if (CONFIG.clientId.startsWith("COLE_SEU")) {
+    UI.setStatus("Troque COLE_SEU_CLIENT_ID_AQUI pelo seu Client ID no app.js.");
+  }
 }
 
 init();
+
+export {};

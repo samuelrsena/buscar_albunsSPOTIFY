@@ -1,13 +1,15 @@
 :root {
-  --bg: #121212;
+  --bg: #0b0b0b;
   --surface: #181818;
-  --surface-hover: #282828;
+  --surface-hover: #262626;
+  --border: #2a2a2a;
   --text: #ffffff;
   --text-muted: #b3b3b3;
   --accent: #1db954;
   --accent-hover: #1ed760;
-  --radius: 8px;
-  --gap: 16px;
+  --danger: #ff6b6b;
+  --radius: 10px;
+  --gap: 20px;
   --transition: 0.2s ease;
 }
 
@@ -23,9 +25,12 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
-  background: var(--bg);
+  background: linear-gradient(180deg, #1a1a1a 0%, var(--bg) 320px);
+  background-repeat: no-repeat;
+  background-color: var(--bg);
   color: var(--text);
 }
 
@@ -37,17 +42,28 @@ img {
 main {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 48px 24px;
 }
 
 h1 {
-  margin: 0 0 24px;
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin: 0 0 32px;
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 h2 {
-  margin: 32px 0 0;
+  margin: 40px 0 0;
   font-size: 1.25rem;
+  font-weight: 700;
+}
+
+body > p {
+  margin: 0;
+  padding: 12px 24px;
+  background: rgba(255, 107, 107, 0.1);
+  border-bottom: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 #status {
@@ -56,27 +72,37 @@ h2 {
   color: var(--text-muted);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--gap);
-  margin-top: var(--gap);
+#login-btn {
+  padding: 14px 32px;
+  border-radius: 999px;
+  font-size: 1rem;
 }
 
 #search-form {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  max-width: 640px;
 }
 
 input {
   flex: 1;
   min-width: 0;
-  padding: 12px 16px;
-  border: 2px solid transparent;
-  border-radius: var(--radius);
+  padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
   font-size: 1rem;
   outline: none;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+input:hover {
+  background: var(--surface-hover);
 }
 
 input:focus {
@@ -84,9 +110,9 @@ input:focus {
 }
 
 button {
-  padding: 12px 24px;
+  padding: 14px 28px;
   border: none;
-  border-radius: var(--radius);
+  border-radius: 999px;
   background: var(--accent);
   color: #000;
   font-size: 1rem;
@@ -97,58 +123,84 @@ button {
 
 button:hover {
   background: var(--accent-hover);
+  transform: scale(1.03);
 }
 
 button:active {
   transform: scale(0.97);
 }
 
+button:focus-visible,
+input:focus-visible,
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--gap);
+  margin-top: var(--gap);
+}
+
 .card {
   display: block;
-  padding: 12px;
+  padding: 14px;
   border-radius: var(--radius);
   background: var(--surface);
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition: background var(--transition), transform var(--transition);
+  transition: background var(--transition), transform var(--transition),
+    box-shadow var(--transition);
 }
 
-.card:hover,
-.card:focus-visible {
+.card:hover {
   background: var(--surface-hover);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
 }
 
 .card img {
   width: 100%;
   aspect-ratio: 1;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   border-radius: 6px;
   object-fit: cover;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 
 .card strong {
   display: -webkit-box;
   overflow: hidden;
+  font-weight: 700;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
 .card small {
+  display: block;
+  margin-top: 4px;
   color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 @media (max-width: 480px) {
   main {
-    padding: 24px 16px;
+    padding: 32px 16px;
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
   }
 
   #search-form {
     flex-direction: column;
+  }
+
+  button {
+    width: 100%;
   }
 }
